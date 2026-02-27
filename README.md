@@ -2,6 +2,14 @@
 
 A modern, modular PHP video player with intelligent caching and a dedicated watch page. Perfect for self-hosted media streaming.
 
+## 🆕 Latest Updates (v2.0)
+
+✅ **Fixed thumbnail preview system** - Now correctly detects FFmpeg and generates previews  
+✅ **Improved path resolution** - Media root now properly points to parent directory  
+✅ **Better error handling** - Debug page shows detailed diagnostics  
+✅ **Auto cache invalidation** - Directory changes detected automatically  
+✅ **Netflix-style watch page** - Dedicated player with back button overlay
+
 ## ✨ Features
 
 ### Architecture
@@ -35,6 +43,10 @@ A modern, modular PHP video player with intelligent caching and a dedicated watc
 video-player-php/
 ├── index.php                 # Home page with directory listing
 ├── watch.php                 # Netflix-style watch page for playback
+├── debug.php                 # 🔍 Diagnostic dashboard for troubleshooting
+├── setup.sh                  # Quick setup script
+├── install_check.sh          # Verify requirements
+├── THUMBNAIL_GUIDE.md        # 🖼️ Thumbnail troubleshooting guide
 ├── config/
 │   └── config.php            # Shared configuration & helpers
 ├── lib/
@@ -47,7 +59,6 @@ video-player-php/
 │   └── resume.php            # Resume position manager
 └── .cache/                   # Automatic cache directory
     ├── thumbs/               # Generated video thumbnails
-    ├── index.json           # Directory structure cache
     ├── durations.json       # Video duration cache
     └── resume.json          # Playback resume positions
 ```
@@ -68,18 +79,22 @@ video-player-php/
    cd ~/media_folder/video-player-php
    ```
 
-2. **Ensure write permissions**:
+2. **Run setup script**:
    ```bash
-   chmod 755 . config lib api
-   chmod 755 .cache 2>/dev/null || true
+   bash setup.sh
    ```
 
-3. **Start a local server** (PHP 7.4+):
+3. **Ensure write permissions**:
+   ```bash
+   chmod 755 . config lib api .cache .cache/thumbs
+   ```
+
+4. **Start a local server** (PHP 7.4+):
    ```bash
    php -S localhost:8000
    ```
 
-4. **Visit**: `http://localhost:8000`
+5. **Visit**: `http://localhost:8000/video-player-php`
 
 ## 🎯 How It Works
 
@@ -177,24 +192,26 @@ Save and retrieve playback positions.
 ## 🐛 Troubleshooting
 
 ### Thumbnails not generating
-- Check FFmpeg is installed: `which ffmpeg`
-- Verify permissions: `chmod 755 .cache/thumbs`
-- Check FFmpeg can read media files
+- **Check FFmpeg**: `which ffmpeg` should show path
+- **Verify permissions**: `chmod 755 .cache/thumbs`
+- **Check file exists**: Verify video files are readable
+- **Use debug page**: Visit `http://localhost:8000/video-player-php/debug.php`
+- **Read guide**: See [THUMBNAIL_GUIDE.md](THUMBNAIL_GUIDE.md) for detailed help
 
 ### Durations show as blank
-- Verify FFprobe is installed: `which ffprobe`
-- Check file format is supported
-- Review PHP error logs
+- Verify FFprobe installed: `which ffprobe`
+- Check file format supported (MP4, MKV, etc.)
+- See debug.php for detailed diagnostics
 
 ### Caching issues
-- Delete `.cache/` to reset all caches
-- Modify a file in the directory to trigger reindex
-- Clear browser cache if watching same file
+- **Reset all cache**: `rm -rf .cache/thumbs/*`
+- **Clear browser cache**: Ctrl+Shift+Del (or Cmd+Shift+Delete)
+- **Modify a file**: Changes trigger automatic cache invalidation
 
 ### Mobile playback issues
-- Check browser supports HTML5 video
-- Try a different video format (WebM for Firefox, MP4 for Safari)
-- Enable hardware acceleration in browser settings
+- Check browser HTML5 support
+- Try different format (WebM, MP4, HLS)
+- Enable hardware acceleration in browser
 
 ## 📝 Performance Tips
 

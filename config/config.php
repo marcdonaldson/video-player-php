@@ -6,8 +6,10 @@
 error_reporting(E_ALL);
 ini_set('display_errors', 0);
 
-define('MEDIA_ROOT', dirname(__DIR__));
-define('CACHE_DIR',  MEDIA_ROOT . '/.cache');
+// Media root - where your actual media files are stored (parent of video-player-php)
+define('MEDIA_ROOT', dirname(dirname(__DIR__)));
+// Cache in video-player-php directory for portability
+define('CACHE_DIR',  dirname(__DIR__) . '/.cache');
 define('THUMBS_DIR', CACHE_DIR . '/thumbs');
 define('INDEX_CACHE', CACHE_DIR . '/index.json');
 define('DURATIONS_CACHE', CACHE_DIR . '/durations.json');

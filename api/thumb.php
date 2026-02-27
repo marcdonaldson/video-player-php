@@ -37,9 +37,22 @@ if (file_exists($thumbPath)) {
     header('Cache-Control: public, max-age=86400');
     readfile($thumbPath);
 } else {
-    // Fallback placeholder
-    header('Content-Type: image/svg+xml');
-    echo '<svg xmlns="http://www.w3.org/2000/svg" width="400" height="225"><rect width="400" height="225" fill="#1f2937"/><text x="50%" y="50%" fill="#6b7280" font-family="sans-serif" font-size="16" text-anchor="middle" dominant-baseline="middle">No Preview</text></svg>';
+    // Fallback placeholder SVG - shows beautiful gradient instead of error
+    header('Content-Type: image/svg+xml; charset=utf-8');
+    header('Cache-Control: public, max-age=3600');
+    echo <<<'SVG'
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="225" viewBox="0 0 400 225">
+  <defs>
+    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1f2937;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#0f172a;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <rect width="400" height="225" fill="url(#grad)"/>
+  <circle cx="200" cy="112" r="40" fill="rgba(168,139,250,0.2)"/>
+  <path d="M185 100 L185 124 L220 112 Z" fill="rgba(168,139,250,0.4)"/>
+</svg>
+SVG;
 }
 exit;
 
@@ -47,21 +60,35 @@ exit;
  * Generate thumbnail using FFmpeg
  */
 function generateThumbnail($absVideo, $thumbPath) {
+    // Check if FFmpeg exists
+    $ffmpegCheck = shell_exec('which ffmpeg 2>&1');
+    if (empty($ffmpegCheck)) {
+        return false;
+    }
+
     $cmd = sprintf(
-        '%s -y -ss 00:00:05 -i %s -vframes 1 -vf "scale=%d:%d:force_original_aspect_ratio=decrease,pad=%d:%d:(ow-iw)/2:(oh-ih)/2" -q:v %d %s 2>/dev/null',
-        FFMPEG, escapeshellarg($absVideo),
+        'ffmpeg -y -ss 00:00:05 -i %s -vframes 1 -vf "scale=%d:%d:force_original_aspect_ratio=decrease,pad=%d:%d:(ow-iw)/2:(oh-ih)/2" -q:v %d %s 2>&1',
+        escapeshellarg($absVideo),
         THUMB_W, THUMB_H, THUMB_W, THUMB_H,
         THUMB_QUALITY,
         escapeshellarg($thumbPath)
     );
 
-    exec($cmd, $out, $code);
+    exec($cmd, $output, $code);
 
-    if ($code === 0 && file_exists($thumbPath)) {
+    // Check if thumbnail was actually created
+    if ($code === 0 && file_exists($thumbPath) && filesize($thumbPath) > 0) {
         // Try to optimize with jpegoptim if available
-        $optimizeCmd = 'command -v jpegoptim >/dev/null 2>&1 && jpegoptim --strip-all -q ' . escapeshellarg($thumbPath) . ' 2>/dev/null';
-        @exec($optimizeCmd);
+        $jpegoptim = shell_exec('which jpegoptim 2>&1');
+        if (!empty($jpegoptim)) {
+            @exec('jpegoptim --strip-all -q ' . escapeshellarg($thumbPath) . ' 2>/dev/null');
+        }
         return true;
+    }
+
+    // Clean up failed thumbnail
+    if (file_exists($thumbPath)) {
+        @unlink($thumbPath);
     }
 
     return false;
